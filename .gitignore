@@ -1,0 +1,14 @@
+.venv/
+.local/
+__pycache__/
+artifacts/
+outputs/
+.pytest_cache/
+.idea/
+.DS_Store
+*.egg-info/
+*.py[cod]
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep

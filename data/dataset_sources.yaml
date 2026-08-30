@@ -1,0 +1,12 @@
+datasets:
+  dataset_a_bassek_2025:
+    role: "centred-metre tracking and embedded events"
+    local_path: "/Users/liza/PycharmProjects/PythonProject/outputs/frames_jsonl"
+    format: "dataset_a_frames_*.jsonl"
+    status: "seven local matches; 100-frame GRF audit validated"
+
+  metrica_sample:
+    role: "normalized tracking and event data"
+    source: "https://github.com/metrica-sports/sample-data"
+    local_path: "data/raw/metrica_sample"
+    status: "project-local copy; 100-frame GRF audit validated"
