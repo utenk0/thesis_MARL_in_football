@@ -14,3 +14,7 @@ def test_dataset_a_pitch_landmarks_map_to_grf() -> None:
 def test_dataset_a_grf_coordinate_round_trip() -> None:
     source = np.asarray([17.25, -12.5], dtype=np.float32)
     np.testing.assert_allclose(grf_to_dataset_a(*dataset_a_to_grf(*source)), source, atol=1e-5)
+
+
+def test_dataset_a_outside_pitch_is_clipped() -> None:
+    np.testing.assert_allclose(dataset_a_to_grf(60, -40), [1, -0.42])

@@ -15,6 +15,8 @@ def test_metrica_pass_event() -> None:
         "Team": "Home", "From": "Player1", "To": "Player2",
     }, match_id="game")
     assert event.event_type == "PASS"
+    assert event.frame_id == 10
+    assert event.x == .25 and event.y == .5
     assert event.grf_action == 10
     np.testing.assert_allclose(event.start_grf, [-.5, 0])
     np.testing.assert_allclose(event.end_grf, [0, .21])
@@ -34,6 +36,8 @@ def test_dataset_a_event_midfield_position_and_actor() -> None:
         "details": {"Team": "T1", "Player": "P1", "Recipient": "P2", "Height": "low", "Evaluation": "successful"},
     }, match_id="match")
     assert event.event_type == "PASS"
+    assert event.frame_id == 100
+    assert event.x == 52.5 and event.y == 34
     assert event.player_id == "P1" and event.recipient_id == "P2"
     assert event.grf_action == 11
     np.testing.assert_allclose(event.start_grf, [0, 0])

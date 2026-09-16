@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -21,7 +22,7 @@ class UnifiedEvent:
     event_id: str
     event_type: str
     source_event_type: str
-    frame: int | None = None
+    frame_id: int | None = None
     end_frame: int | None = None
     period: str | None = None
     timestamp_seconds: float | None = None
@@ -30,17 +31,30 @@ class UnifiedEvent:
     team_id: str | None = None
     player_id: str | None = None
     recipient_id: str | None = None
+    x: float | None = None
+    y: float | None = None
     start_grf: tuple[float, float] | None = None
     end_grf: tuple[float, float] | None = None
     outcome: str | None = None
     grf_action: int | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def frame(self) -> int | None:
+        """Compatibility alias for code written before the Stage 4 schema."""
+        return self.frame_id
+
     def validate(self) -> None:
         if self.event_type not in EVENT_TYPES:
             raise ValueError(f"Unsupported unified event type: {self.event_type}.")
         if self.grf_action is not None and not 0 <= self.grf_action <= 18:
             raise ValueError("GRF action must be in [0,18].")
+        if (self.x is None) != (self.y is None):
+            raise ValueError("Event x and y must either both be present or both be missing.")
+        if self.x is not None and not all(
+            isinstance(value, (int, float)) and math.isfinite(value) for value in (self.x, self.y)
+        ):
+            raise ValueError("Event coordinates must be finite numbers.")
         for name in ("start_grf", "end_grf"):
             position = getattr(self, name)
             if position is not None and not (-1.0 <= position[0] <= 1.0 and -0.42 <= position[1] <= 0.42):

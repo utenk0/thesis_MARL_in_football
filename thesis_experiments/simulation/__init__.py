@@ -1,4 +1,4 @@
-"""GRF replay and trajectory-tracking validation tools."""
+"""GRF replay, Gymnasium replay, and trajectory-tracking validation tools."""
 
 from thesis_experiments.simulation.trajectory_controller import TrajectoryController
 

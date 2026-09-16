@@ -1,4 +1,9 @@
 .venv/
+.venv-grf/
+.venv-methods/
+.venv-*/
+.venv-methods
+.venv-*
 .local/
 __pycache__/
 artifacts/
@@ -8,6 +13,8 @@ outputs/
 .DS_Store
 *.egg-info/
 *.py[cod]
+football/gfootball_engine
+football/third_party/gfootball_engine/fonts/
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*

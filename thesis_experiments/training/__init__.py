@@ -1,1 +1,1 @@
-"""BC pretraining and offline CTDE fine-tuning."""
+"""BC, CTDE, and ghosting training helpers."""

@@ -36,6 +36,7 @@ def run_closed_loop(audit, output_dir: Path, *, live: bool = False, record: bool
         dump_frequency=1, logdir=str(logdir),
         number_of_left_players_agent_controls=11,
         number_of_right_players_agent_controls=11,
+        other_config_options={"real_time": live},
     )
     controller = TrajectoryController(stop_tolerance=stop_tolerance, sprint_threshold=sprint_threshold, sprint_release_threshold=sprint_release_threshold)
     simulated_history, action_history, error_history = [], [], []

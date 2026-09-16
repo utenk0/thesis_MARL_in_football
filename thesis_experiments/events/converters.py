@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 from typing import Any, Iterable
 
 import numpy as np
-import pandas as pd
 
 from thesis_experiments.datasets.action_mapping import (
     dataset_a_event_to_grf_action,
@@ -20,15 +20,16 @@ from thesis_experiments.events.schema import UnifiedEvent
 def convert_metrica_events(game_dir: Path, *, start_frame: int | None = None, end_frame: int | None = None) -> list[UnifiedEvent]:
     """Load one Metrica game CSV and return normalized events."""
     path = game_dir / f"{game_dir.name}_RawEventsData.csv"
-    rows = pd.read_csv(path)
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        rows = list(csv.DictReader(handle))
     output = []
-    for index, row in rows.iterrows():
+    for index, row in enumerate(rows):
         frame = _int(row.get("Start Frame"))
         if start_frame is not None and (frame is None or frame < start_frame):
             continue
         if end_frame is not None and (frame is None or frame > end_frame):
             continue
-        output.append(metrica_event_to_unified(row.to_dict(), match_id=game_dir.name, fallback_id=index))
+        output.append(metrica_event_to_unified(row, match_id=game_dir.name, fallback_id=index))
     return output
 
 
@@ -47,10 +48,11 @@ def metrica_event_to_unified(raw: dict[str, Any], *, match_id: str, fallback_id:
         source="metrica", match_id=match_id,
         event_id=_text(raw.get("Event ID")) or f"{match_id}_{fallback_id}",
         event_type=event_type, source_event_type=source_type,
-        frame=_int(raw.get("Start Frame")), end_frame=_int(raw.get("End Frame")),
+        frame_id=_int(raw.get("Start Frame")), end_frame=_int(raw.get("End Frame")),
         period=_text(raw.get("Period")), timestamp_seconds=_float(raw.get("Start Time [s]")),
         subtype=subtype, team_id=_text(raw.get("Team")), player_id=_text(raw.get("From")),
-        recipient_id=_text(raw.get("To")), start_grf=start, end_grf=end,
+        recipient_id=_text(raw.get("To")), x=_float(raw.get("Start X")), y=_float(raw.get("Start Y")),
+        start_grf=start, end_grf=end,
         outcome=_metrica_outcome(source_type, subtype), grf_action=action,
         raw=_json_safe(raw),
     )
@@ -90,12 +92,13 @@ def dataset_a_event_to_unified(raw: dict[str, Any], *, match_id: str, fallback_f
         source="dataset_a", match_id=match_id,
         event_id=str(raw.get("event_id") or f"{match_id}_{fallback_frame}"),
         event_type=event_type, source_event_type=source_type,
-        frame=_int(raw.get("anchor_frame")) or fallback_frame,
+        frame_id=_int(raw.get("anchor_frame")) or fallback_frame,
         end_frame=_int(raw.get("end_frame")), period=_text(details.get("GameSection")),
         timestamp=_text(raw.get("event_time")), subtype=_dataset_a_subtype(details),
         team_id=_first(details, "Team", "TeamLeft", "WinnerTeam", "LoserTeam"),
         player_id=_first(details, "Player", "Winner", "Loser"),
-        recipient_id=_text(details.get("Recipient")),
+        recipient_id=_text(details.get("Recipient")), x=_float(raw.get("x_position")),
+        y=_float(raw.get("y_position")),
         start_grf=_dataset_a_event_position(raw.get("x_position"), raw.get("y_position")),
         outcome=_normalize_outcome(_first(details, "Evaluation", "WinnerResult", "ChanceEvaluation")),
         grf_action=(12 if event_type == "PENALTY" else dataset_a_event_to_grf_action(source_type, details)), raw=_json_safe(raw),

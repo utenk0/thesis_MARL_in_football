@@ -1,12 +1,22 @@
 datasets:
   dataset_a_bassek_2025:
     role: "centred-metre tracking and embedded events"
-    local_path: "/Users/liza/PycharmProjects/PythonProject/outputs/frames_jsonl"
-    format: "dataset_a_frames_*.jsonl"
-    status: "seven local matches; 100-frame GRF audit validated"
+    source: "https://doi.org/10.6084/m9.figshare.28196177"
+    local_path: "data/raw/dataset_a/datasetA.zip"
+    processed_frames_path: "data/processed/dataset_a/frames_jsonl"
+    processed_storage: "project-local symlink to existing generated JSONL files"
+    format: "ZIP containing DFL match-information, event, and position XML"
+    license: "CC BY 4.0"
+    matches: 7
+    sha256: "d4b57ed3308edb511d353a0d2d36c7ee99f7599c5b786147cf27b7683e0a8df5"
+    status: "project-local raw archive; structure and checksum verified"
 
   metrica_sample:
     role: "normalized tracking and event data"
     source: "https://github.com/metrica-sports/sample-data"
     local_path: "data/raw/metrica_sample"
-    status: "project-local copy; 100-frame GRF audit validated"
+    format: "CSV for Games 1-2; EPTS tracking/XML metadata and JSON events for Game 3"
+    license: "upstream README usage terms; public use requires source acknowledgement"
+    matches: 3
+    source_revision: "e706dd506b360d69d9d123d5b8026e7294b13996"
+    status: "project-local raw copy; all three sample games present"

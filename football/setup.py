@@ -63,14 +63,18 @@ class CustomBuild(build_ext):
                        'variable as int. Please set it to 0 or 1')
 
     if use_prebuilt_lib:
-      if os.system(
-            'cp third_party/gfootball_engine/lib/prebuilt_gameplayfootball.so ' +
-            dest_dir + '/_gameplayfootball.so'):
-        raise OSError(
-            'Failed to copy pre-built library to a final destination %s.' %
-            dest_dir)
+      prebuilt_lib = os.path.join(
+          'third_party', 'gfootball_engine', 'lib',
+          'prebuilt_gameplayfootball.so')
+      local_lib = os.path.join(
+          'third_party', 'gfootball_engine', '_gameplayfootball.so')
+      source_lib = prebuilt_lib if os.path.exists(prebuilt_lib) else local_lib
+      if not os.path.exists(source_lib):
+        raise OSError('No pre-built Google Research Football engine found.')
+      copy_compiled_libs([source_lib], dest_dir)
     else:
       # Compile the engine
+      os.environ['GFOOTBALL_PYTHON'] = sys.executable
       if os.system('gfootball/build_game_engine.sh'):
         raise OSError('Google Research Football compilation failed')
       # There might be multiple compiled modules (e.g. for different python versions)

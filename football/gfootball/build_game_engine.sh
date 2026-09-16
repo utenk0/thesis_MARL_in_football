@@ -20,13 +20,16 @@ if [[ "$OSTYPE" == "darwin"* ]] ; then
     LIB_EXTENSION="dylib"
 fi
 
+# Use the interpreter selected by setup.py so build-time modules come from the
+# same environment as the installation.
+PYTHON_EXECUTABLE="${GFOOTBALL_PYTHON:-$(command -v python3)}"
+
 # Take into account # of cores and available RAM for deciding on compilation parallelism.
 # TODO: Try importing psutil and if failed fall back to 1 thread
-PARALLELISM=$(python3 -c 'import psutil; import multiprocessing as mp; print(int(max(1,min((psutil.virtual_memory().available/1000000000-1)/0.5, mp.cpu_count()))))')
+PARALLELISM=$("$PYTHON_EXECUTABLE" -c 'import psutil; import multiprocessing as mp; print(int(max(1,min((psutil.virtual_memory().available/1000000000-1)/0.5, mp.cpu_count()))))')
 
 # Delete pre-existing version of CMakeCache.txt to make 'python3 -m pip install' work.
 rm -f third_party/gfootball_engine/CMakeCache.txt
-PYTHON_EXECUTABLE=$(command -v python3)
 (
     cd third_party/gfootball_engine
     cmake -DPython_EXECUTABLE="$PYTHON_EXECUTABLE" .
