@@ -18,7 +18,8 @@ def train_ctde(paths: list[Path], bc_checkpoint: Path, output: Path, *, critic_e
     states = torch.from_numpy(arrays["global_states"]).float()
     next_states = torch.from_numpy(arrays["next_global_states"]).float()
     rewards = torch.from_numpy(arrays["team_rewards"]).float()
-    dones = torch.from_numpy(arrays["dones"].astype(np.float32)).float().unsqueeze(-1)
+    # Tracking clip cutoffs are truncations, not terminal football states.
+    dones = torch.zeros((len(states), 1))
     checkpoint = torch.load(bc_checkpoint, map_location="cpu", weights_only=True)
     actor = SharedActor(checkpoint["observation_size"], checkpoint["action_size"], checkpoint["hidden_size"])
     actor.load_state_dict(checkpoint["actor_state_dict"])

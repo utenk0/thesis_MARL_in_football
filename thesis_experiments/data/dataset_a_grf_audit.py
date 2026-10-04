@@ -13,6 +13,7 @@ import numpy as np
 from thesis_experiments.datasets.action_mapping import dataset_a_event_to_grf_action
 from thesis_experiments.datasets.coordinates import dataset_a_to_grf, grf_to_dataset_a
 from thesis_experiments.datasets.movement import movement_actions
+from thesis_experiments.events.converters import dataset_a_event_actor
 
 
 @dataclass(slots=True)
@@ -191,18 +192,27 @@ def _events_and_overrides(records, actions, left_ids, right_ids):
     for frame_index, record in enumerate(records):
         for event in record.get("context", {}).get("events", []):
             copied = dict(event)
-            action = dataset_a_event_to_grf_action(event.get("event_type", ""), event.get("details"))
-            copied["grf_action"] = action
+            event_type = str(event.get("event_type", ""))
             details = event.get("details") or {}
-            player_id = str(details.get("Player") or details.get("Winner") or "")
-            team_id = str(details.get("Team") or "")
-            ids, offset = (left_ids, 0) if team_id else ([], 0)
-            if team_id and team_id != "":
-                ids, offset = (left_ids, 0) if player_id in left_ids else (right_ids, 11)
-            if action is not None and frame_index < len(actions) and player_id in ids:
-                index = offset + ids.index(player_id)
+            action = dataset_a_event_to_grf_action(event_type, details)
+            copied["grf_action"] = action
+            player_id, team_id = dataset_a_event_actor(event_type, details)
+            player_id, team_id = player_id or "", team_id or ""
+            copied["resolved_actor_id"] = player_id or None
+            copied["resolved_actor_team_id"] = team_id or None
+
+            index = None
+            if player_id in left_ids:
+                index = left_ids.index(player_id)
+            elif player_id in right_ids:
+                index = 11 + right_ids.index(player_id)
+
+            if action is not None and frame_index < len(actions) and index is not None:
                 actions[frame_index][index] = action
                 copied["joint_action_player_index"] = index
+                copied["action_override_status"] = "applied"
+            elif action is not None:
+                copied["action_override_status"] = "unmatched_actor"
             events.append(copied)
     return events
 

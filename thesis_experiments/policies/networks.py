@@ -5,6 +5,8 @@ from __future__ import annotations
 import torch
 from torch import nn
 
+from thesis_experiments.transitions.observations import LOCAL_FEATURES
+
 
 def _mlp(input_size: int, output_size: int, hidden_size: int) -> nn.Sequential:
     return nn.Sequential(
@@ -17,7 +19,7 @@ def _mlp(input_size: int, output_size: int, hidden_size: int) -> nn.Sequential:
 class SharedActor(nn.Module):
     """One policy network reused for every player during decentralized execution."""
 
-    def __init__(self, observation_size: int = 24, action_size: int = 19, hidden_size: int = 128):
+    def __init__(self, observation_size: int = LOCAL_FEATURES, action_size: int = 19, hidden_size: int = 128):
         super().__init__()
         self.observation_size = observation_size
         self.action_size = action_size

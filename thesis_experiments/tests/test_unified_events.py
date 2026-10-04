@@ -54,6 +54,20 @@ def test_dataset_a_kickoff_side_metadata() -> None:
     assert event.period == "firstHalf"
 
 
+def test_dataset_a_tackle_actor_is_participant_without_ball() -> None:
+    event = dataset_a_event_to_unified({
+        "event_id": "3", "event_type": "TacklingGame", "anchor_frame": 57,
+        "details": {
+            "Winner": "attacker", "WinnerTeam": "left", "WinnerRole": "withBallControl",
+            "Loser": "defender", "LoserTeam": "right", "LoserRole": "withoutBallControl",
+        },
+    }, match_id="match")
+    assert event.event_type == "TACKLE"
+    assert event.player_id == "defender"
+    assert event.team_id == "right"
+    assert event.grf_action == 16
+
+
 def test_unmapped_metrica_event_does_not_override_movement() -> None:
     event = metrica_event_to_unified({"Type": "FAULT RECEIVED", "Start X": .5, "Start Y": .5}, match_id="game")
     assert event.event_type == "FOUL"

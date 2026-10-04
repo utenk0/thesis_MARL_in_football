@@ -84,10 +84,27 @@ def convert_dataset_a_events(path: Path, *, start_frame: int | None = None, end_
     return output
 
 
+def dataset_a_event_actor(source_type: str, details: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Return the action-performing player and team from Dataset A fields."""
+    if source_type == "TacklingGame":
+        winner_role = str(details.get("WinnerRole") or "").casefold()
+        loser_role = str(details.get("LoserRole") or "").casefold()
+        if winner_role == "withoutballcontrol":
+            return _text(details.get("Winner")), _text(details.get("WinnerTeam"))
+        if loser_role == "withoutballcontrol":
+            return _text(details.get("Loser")), _text(details.get("LoserTeam"))
+        return _text(details.get("Winner")), _text(details.get("WinnerTeam"))
+    return (
+        _text(details.get("Player") or details.get("Winner")),
+        _text(details.get("Team") or details.get("WinnerTeam")),
+    )
+
+
 def dataset_a_event_to_unified(raw: dict[str, Any], *, match_id: str, fallback_frame: int | None = None) -> UnifiedEvent:
     source_type = str(raw.get("event_type") or "")
     details = raw.get("details") or {}
     event_type = _dataset_a_type(source_type, details)
+    player_id, team_id = dataset_a_event_actor(source_type, details)
     event = UnifiedEvent(
         source="dataset_a", match_id=match_id,
         event_id=str(raw.get("event_id") or f"{match_id}_{fallback_frame}"),
@@ -95,8 +112,8 @@ def dataset_a_event_to_unified(raw: dict[str, Any], *, match_id: str, fallback_f
         frame_id=_int(raw.get("anchor_frame")) or fallback_frame,
         end_frame=_int(raw.get("end_frame")), period=_text(details.get("GameSection")),
         timestamp=_text(raw.get("event_time")), subtype=_dataset_a_subtype(details),
-        team_id=_first(details, "Team", "TeamLeft", "WinnerTeam", "LoserTeam"),
-        player_id=_first(details, "Player", "Winner", "Loser"),
+        team_id=team_id or _first(details, "TeamLeft", "LoserTeam"),
+        player_id=player_id or _first(details, "Loser"),
         recipient_id=_text(details.get("Recipient")), x=_float(raw.get("x_position")),
         y=_float(raw.get("y_position")),
         start_grf=_dataset_a_event_position(raw.get("x_position"), raw.get("y_position")),

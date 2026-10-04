@@ -7,6 +7,7 @@ import torch
 
 from thesis_experiments.policies.networks import CentralizedCritic, SharedActor
 from thesis_experiments.transitions.builder import build_joint_transitions
+from thesis_experiments.transitions.observations import LOCAL_FEATURES, OBSERVATION_VERSION
 
 
 def test_joint_transition_shapes() -> None:
@@ -20,7 +21,8 @@ def test_joint_transition_shapes() -> None:
         events=[], match_id="test",
     )
     data = build_joint_transitions(audit, source="test")
-    assert data.local_observations.shape == (2, 22, 24)
+    assert data.local_observations.shape == (2, 22, LOCAL_FEATURES)
+    assert data.observation_version == OBSERVATION_VERSION
     assert data.global_states.shape == (2, 46)
     assert data.actions.shape == (2, 22)
     assert data.team_rewards.shape == (2, 2)
@@ -29,5 +31,5 @@ def test_joint_transition_shapes() -> None:
 
 
 def test_actor_and_critic_shapes() -> None:
-    assert SharedActor()(torch.zeros(22, 24)).shape == (22, 19)
+    assert SharedActor()(torch.zeros(22, LOCAL_FEATURES)).shape == (22, 19)
     assert CentralizedCritic()(torch.zeros(4, 46)).shape == (4, 2)

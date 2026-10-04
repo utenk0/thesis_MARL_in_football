@@ -18,8 +18,32 @@ def main() -> None:
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--hidden-size", type=int, default=128)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--device", default="cpu")
+    parser.add_argument(
+        "--observation-variant",
+        choices=["spatial", "temporal_context", "full"],
+        default="full",
+    )
+    parser.add_argument(
+        "--class-weighting",
+        choices=["none", "inverse_frequency"],
+        default="none",
+    )
+    parser.add_argument("--max-class-weight", type=float, default=20.0)
     args = parser.parse_args()
-    print(json.dumps(train_bc(args.data, args.output, epochs=args.epochs, batch_size=args.batch_size, learning_rate=args.learning_rate, hidden_size=args.hidden_size, seed=args.seed), indent=2))
+    print(json.dumps(train_bc(
+        args.data,
+        args.output,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        learning_rate=args.learning_rate,
+        hidden_size=args.hidden_size,
+        seed=args.seed,
+        device=args.device,
+        observation_variant=args.observation_variant,
+        class_weighting=args.class_weighting,
+        max_class_weight=args.max_class_weight,
+    ), indent=2))
 
 
 if __name__ == "__main__":

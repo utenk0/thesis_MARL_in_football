@@ -41,9 +41,9 @@ The focused learning layer now continues with:
 
 ```text
 unified 22-player transitions
-  -> Gymnasium replay environment for env-based backends
+  -> Gymnasium interface to live GRF for PPO/GAIL
   -> common method registry
-  -> BC / GAIL / PPO / CQL / DT placeholder / Ghosting / CTDE
+  -> BC / GAIL / PPO / CQL / Decision Transformer / Ghosting / CTDE
   -> comparable result JSON and checkpoints under artifacts/methods/
 ```
 
@@ -236,10 +236,10 @@ Method backend environment use:
 
 ```text
 BC       uses imitation with Gymnasium spaces and offline demonstrations
-GAIL     uses imitation + stable-baselines3 PPO on FootballReplayEnv
-PPO      uses stable-baselines3 PPO on FootballReplayEnv
+GAIL     uses imitation + shared stable-baselines3 PPO in live GRF
+PPO      uses shared stable-baselines3 PPO in live GRF
 CQL      uses d3rlpy offline data; d3rlpy depends on gym>=0.26 internally
-DT       placeholder manifest, no simulator backend yet
+DT       uses a project PyTorch causal return-conditioned Transformer
 Ghosting uses project PyTorch code
 CTDE     uses project PyTorch code
 ```
@@ -251,13 +251,83 @@ CTDE     uses project PyTorch code
 .venv-methods/bin/python -m pip install -r requirements-methods.txt
 ```
 
-`dt` writes a placeholder manifest until the external Decision Transformer
-backend is selected.
+`dt` trains and saves a causal Transformer. All seven methods can reload their
+checkpoints and control all 22 players in GRF through `evaluate_policy`.
 
-Stage 9 smoke results for the two 100-frame transition files are summarized in
+The earlier Stage 9 smoke results for the two 100-frame transition files are summarized in
 [`thesis_plan/METHOD_SMOKE_RESULTS.md`](thesis_plan/METHOD_SMOKE_RESULTS.md).
 The final Stage 9 environment conclusion is recorded in
 [`thesis_plan/STAGE_9_CONCLUSION.md`](thesis_plan/STAGE_9_CONCLUSION.md).
 The optional method stack installs `gym>=0.26` through d3rlpy, which conflicts
 with the vendored GRF package's `gym<=0.21` expectation. Keep GRF replay in
 `.venv-grf` and method training in `.venv-methods`.
+
+## Train and use all seven policies
+
+The implementation audit and completed initial run are documented in
+[TRAINING_STAGE_STATUS.md](thesis_plan/TRAINING_STAGE_STATUS.md).
+[Method mechanisms and implementation scope](thesis_plan/METHOD_MECHANISMS.md)
+explain the objectives and the differences from full paper reproductions.
+
+Prepare 512-frame clips from all seven Dataset A matches and all three Metrica
+games. Missing-player/ball windows are excluded; matches stay in one split:
+
+```bash
+.venv-methods/bin/python -m thesis_experiments.scripts.prepare_training_data
+```
+
+Run the same initial training budget, save policies, evaluate held-out actions,
+and use each policy for autonomous 22-player GRF rollouts:
+
+```bash
+.venv-methods/bin/python -m thesis_experiments.scripts.run_training_suite \
+  --split-manifest data/processed/training_stage/split_manifest.json \
+  --output-dir artifacts/training_stage_20260916 \
+  --methods all --seeds 0 --epochs 10 --actor-epochs 10 \
+  --batch-size 256 --hidden-size 128 --total-timesteps 11264 \
+  --rollout-steps 128 --episode-steps 128 --context-length 16 \
+  --bc-backend torch --env-backend grf --eval-grf-steps 100
+```
+
+`--total-timesteps` is agent transitions for PPO/GAIL (22 per joint simulator
+step) and optimizer updates for CQL; these are not equal computational budgets.
+Use repeated `--seeds` and larger budgets for subsequent experiments.
+
+Results live in `seed_0/methods/<method>/`: checkpoint, config, training result,
+validation/test evaluation JSON, and autonomous rollout NPZ files. The suite
+updates `training_manifest.json` after every run and exits nonzero on a failed
+training or evaluation; placeholders cannot count as completed training.
+
+`FootballGRFEnv` runs from `.venv-methods` and starts the GRF worker using
+`.venv-grf/bin/python`; override with `--grf-python` if needed. Both environments
+must be installed. `--env-backend replay` remains an explicit interface-test
+option: actions do not change recorded dynamics in that backend.
+
+For a saved policy, use `python -m thesis_experiments.scripts.evaluate_policy
+--help`. Evaluation rejects matches used during training. DT evaluation uses
+training-derived desired returns and maintains per-player history.
+
+## Ubuntu virtual-machine training
+
+The next multi-seed run can be installed, started in the background, resumed,
+monitored, and fetched with the scripts under [`vm/`](vm/README.md). The default
+VM job expands each match clip to 3,000 frames, uses seeds 0–2, and trains all
+seven methods. A recommended starting VM has Ubuntu 22.04 x86_64, 16 vCPUs,
+32 GB RAM, 100 GB disk, and optionally an NVIDIA GPU with at least 16 GB VRAM.
+
+The same Linux stack can be built and smoke-tested locally with Docker. See
+[`docker/README.md`](docker/README.md). On Apple Silicon it runs as
+`linux/amd64` under emulation, so use it to validate the container and reserve
+the full training matrix for the VM.
+
+The phased decision on GitHub Actions, registries, Apptainer, cluster launch,
+Hydra, MLflow, and DVC is recorded in
+[`thesis_plan/EXPERIMENT_INFRASTRUCTURE.md`](thesis_plan/EXPERIMENT_INFRASTRUCTURE.md).
+
+The versioned 61-feature player observation, its causal semantics, and the
+required pre-training validation are documented in
+[`thesis_plan/OBSERVATION_REPRESENTATION.md`](thesis_plan/OBSERVATION_REPRESENTATION.md).
+
+The action-support audit, controlled observation ablation, class-balanced BC
+experiment, and resulting decision about full-scale training are documented in
+[`thesis_plan/BC_ABLATION_RESULTS.md`](thesis_plan/BC_ABLATION_RESULTS.md).

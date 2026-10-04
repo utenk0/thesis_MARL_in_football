@@ -7,6 +7,13 @@ from pathlib import Path
 
 import numpy as np
 
+from thesis_experiments.transitions.observations import (
+    LEGACY_OBSERVATION_VERSION,
+    LOCAL_FEATURES,
+    OBSERVATION_VERSION,
+    SPATIAL_FEATURES,
+)
+
 
 @dataclass(slots=True)
 class JointTransitionDataset:
@@ -22,6 +29,7 @@ class JointTransitionDataset:
     team_ids: np.ndarray                 # [22]
     source: str
     match_id: str
+    observation_version: str = OBSERVATION_VERSION
 
     def validate(self) -> None:
         transitions = len(self.actions)
@@ -40,8 +48,24 @@ class JointTransitionDataset:
             raise ValueError("dones and frames must contain one value per transition.")
         if self.player_ids.shape != (22,) or self.team_ids.shape != (22,):
             raise ValueError("Exactly 22 stable player and team identifiers are required.")
-        if not np.isfinite(self.local_observations).all() or not np.isfinite(self.global_states).all():
-            raise ValueError("Observations must be finite.")
+        if self.local_observations.shape != self.next_local_observations.shape:
+            raise ValueError("Current and next local observations must have identical shapes.")
+        expected_features = {
+            OBSERVATION_VERSION: LOCAL_FEATURES,
+            LEGACY_OBSERVATION_VERSION: SPATIAL_FEATURES,
+        }.get(self.observation_version)
+        if expected_features is None:
+            raise ValueError(f"Unsupported observation version: {self.observation_version!r}.")
+        if self.local_observations.shape[-1] != expected_features:
+            raise ValueError(
+                f"{self.observation_version} requires {expected_features} local features, "
+                f"got {self.local_observations.shape[-1]}."
+            )
+        for name in ("local_observations", "next_local_observations", "global_states", "next_global_states", "team_rewards"):
+            if not np.isfinite(getattr(self, name)).all():
+                raise ValueError(f"{name} must be finite.")
+        if not np.issubdtype(self.actions.dtype, np.integer):
+            raise ValueError("Actions must be integers.")
         if np.any((self.actions < 0) | (self.actions > 18)):
             raise ValueError("GRF actions must be in [0,18].")
 
@@ -51,12 +75,17 @@ class JointTransitionDataset:
         np.savez_compressed(path, **{name: getattr(self, name) for name in (
             "local_observations", "global_states", "actions", "team_rewards",
             "next_local_observations", "next_global_states", "dones", "frames",
-            "player_ids", "team_ids", "source", "match_id",
+            "player_ids", "team_ids", "source", "match_id", "observation_version",
         )})
 
     @classmethod
     def load(cls, path: Path) -> "JointTransitionDataset":
         with np.load(path, allow_pickle=False) as data:
+            observation_version = (
+                str(data["observation_version"])
+                if "observation_version" in data.files
+                else LEGACY_OBSERVATION_VERSION
+            )
             result = cls(
                 **{name: data[name].copy() for name in (
                     "local_observations", "global_states", "actions", "team_rewards",
@@ -64,6 +93,7 @@ class JointTransitionDataset:
                     "player_ids", "team_ids",
                 )},
                 source=str(data["source"]), match_id=str(data["match_id"]),
+                observation_version=observation_version,
             )
         result.validate()
         return result
