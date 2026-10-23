@@ -182,6 +182,47 @@ def test_final_dataset_partitions_do_not_leave_short_tail():
     assert partitions[-1][1] == 8_500
 
 
+def test_manifest_validator_enforces_selected_team(tmp_path):
+    from thesis_experiments.scripts.validate_split_manifest import validate_manifest
+
+    data_path = coherent_dataset(tmp_path / "data.npz")
+    record = {
+        "path": str(data_path),
+        "focal_team_id": "DFL-CLU-00000P",
+        "transitions": 4,
+    }
+    manifest_path = tmp_path / "team_manifest.json"
+    manifest_path.write_text(json.dumps({
+        "team_id": "DFL-CLU-00000P",
+        "splits": {
+            "train": [record],
+            "validation": [record],
+            "test": [record],
+        },
+    }))
+
+    result = validate_manifest(
+        manifest_path,
+        tmp_path,
+        expected_team_id="DFL-CLU-00000P",
+    )
+    assert result["ok"]
+    assert result["team_id"] == "DFL-CLU-00000P"
+
+    with pytest.raises(ValueError, match="expected team_id"):
+        validate_manifest(
+            manifest_path,
+            tmp_path,
+            expected_team_id="DFL-CLU-other",
+        )
+
+    document = json.loads(manifest_path.read_text())
+    document["splits"]["test"][0] = {**record, "focal_team_id": "DFL-CLU-other"}
+    manifest_path.write_text(json.dumps(document))
+    with pytest.raises(ValueError, match="does not belong"):
+        validate_manifest(manifest_path, tmp_path)
+
+
 def test_evaluation_rejects_match_leakage_even_in_different_files(tmp_path):
     from thesis_experiments.scripts.evaluate_policy import validate_split
     first = coherent_dataset(tmp_path / "train.npz")
@@ -209,6 +250,66 @@ def test_suite_rejects_placeholder_success_and_persists_failure(tmp_path, monkey
     assert exit_info.value.code == 1
     manifest = json.loads((directory / "training_manifest.json").read_text())
     assert manifest[0]["status"] == "failed"
+
+
+def test_suite_binds_every_method_to_one_team_contract(tmp_path, monkeypatch):
+    import sys
+    from thesis_experiments.scripts import run_training_suite
+
+    split_paths = {}
+    for split in ("train", "validation", "test"):
+        path = coherent_dataset(tmp_path / f"{split}.npz")
+        dataset = JointTransitionDataset.load(path)
+        dataset.match_id = f"selected-team-{split}"
+        dataset.save(path)
+        split_paths[split] = path
+
+    manifest_path = tmp_path / "team_manifest.json"
+    manifest_path.write_text(json.dumps({
+        "team_id": "DFL-CLU-00000P",
+        "splits": {
+            split: [{
+                "path": str(path),
+                "match_id": f"selected-team-{split}",
+                "focal_team_id": "DFL-CLU-00000P",
+            }]
+            for split, path in split_paths.items()
+        },
+    }))
+    output_dir = tmp_path / "suite"
+    monkeypatch.setattr(sys, "argv", [
+        "suite",
+        "--split-manifest", str(manifest_path),
+        "--expected-team-id", "DFL-CLU-00000P",
+        "--output-dir", str(output_dir),
+        "--methods", "all",
+        "--dry-run",
+    ])
+    run_training_suite.main()
+
+    contract = json.loads((output_dir / "dataset_contract.json").read_text())
+    assert contract["team_id"] == "DFL-CLU-00000P"
+    assert contract["splits"]["train"]["matches"] == ["selected-team-train"]
+    runs = json.loads((output_dir / "training_manifest.json").read_text())
+    assert {run["method"] for run in runs} == {
+        "bc", "gail", "ppo", "cql", "dt", "ghosting", "ctde",
+    }
+    assert all(str(split_paths["train"]) in run["command"] for run in runs)
+    assert all(run["status"] == "dry-run" for run in runs)
+
+    (output_dir / "dataset_contract.json").unlink()
+    monkeypatch.setattr(sys, "argv", [
+        "suite",
+        "--split-manifest", str(manifest_path),
+        "--expected-team-id", "DFL-CLU-00000P",
+        "--output-dir", str(output_dir),
+        "--methods", "all",
+        "--dry-run",
+        "--resume",
+    ])
+    with pytest.raises(SystemExit) as exit_info:
+        run_training_suite.main()
+    assert exit_info.value.code == 2
 
 
 def test_live_grf_actions_change_dynamics():

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Prepare a larger match-disjoint dataset and run all methods with three seeds.
+# Run all seven closed-loop methods on the selected team's match-disjoint data.
 set -euo pipefail
 
 PROJECT_DIR="${PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-RUN_NAME="${RUN_NAME:-vm_training_20260924}"
-FRAMES="${FRAMES:-3000}"
+RUN_NAME="${RUN_NAME:-team_00000P_closed_loop_full}"
 EPOCHS="${EPOCHS:-50}"
 TOTAL_TIMESTEPS="${TOTAL_TIMESTEPS:-250000}"
 SEEDS="${SEEDS:-0 1 2}"
@@ -14,8 +13,9 @@ ROLLOUT_STEPS="${ROLLOUT_STEPS:-256}"
 EPISODE_STEPS="${EPISODE_STEPS:-512}"
 CONTEXT_LENGTH="${CONTEXT_LENGTH:-32}"
 EVAL_GRF_STEPS="${EVAL_GRF_STEPS:-500}"
-DATA_DIR="${DATA_DIR:-data/processed/vm_training_${FRAMES}}"
-SPLIT_MANIFEST="${SPLIT_MANIFEST:-split_manifest.json}"
+DATA_DIR="${DATA_DIR:-data/processed/final_stage_v1}"
+SPLIT_MANIFEST="${SPLIT_MANIFEST:-team_00000P_manifest.json}"
+EXPECTED_TEAM_ID="${EXPECTED_TEAM_ID:-DFL-CLU-00000P}"
 OUTPUT_DIR="${OUTPUT_DIR:-artifacts/vm_runs/${RUN_NAME}}"
 MIN_FREE_GB="${MIN_FREE_GB:-5}"
 
@@ -43,7 +43,8 @@ fi
 
 echo "Validating training data: $MANIFEST_PATH"
 .venv-methods/bin/python -m thesis_experiments.scripts.validate_split_manifest \
-  "$MANIFEST_PATH" --project-dir "$PROJECT_DIR"
+  "$MANIFEST_PATH" --project-dir "$PROJECT_DIR" \
+  --expected-team-id "$EXPECTED_TEAM_ID"
 
 mkdir -p "$OUTPUT_DIR"
 if ! [[ "$MIN_FREE_GB" =~ ^[0-9]+$ ]]; then
@@ -73,6 +74,7 @@ echo "Training device: $DEVICE"
 
 .venv-methods/bin/python -m thesis_experiments.scripts.run_training_suite \
   --split-manifest "$MANIFEST_PATH" \
+  --expected-team-id "$EXPECTED_TEAM_ID" \
   --output-dir "$OUTPUT_DIR" \
   --methods all \
   --seeds $SEEDS \

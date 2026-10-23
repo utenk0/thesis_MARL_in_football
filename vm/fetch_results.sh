@@ -9,7 +9,7 @@ fi
 
 REMOTE="$1"
 REMOTE_DIR="${2:-thesis_MARL_in_football}"
-RUN_NAME="${3:-vm_training_20260924}"
+RUN_NAME="${3:-team_00000P_closed_loop_full}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOCAL_DIR="$PROJECT_DIR/artifacts/vm_runs/$RUN_NAME"
 

@@ -70,8 +70,8 @@ bash vm/sync_to_vm.sh pc12041 thesis_MARL_in_football
 ```
 
 Use `SYNC_METHOD=cql` to omit the frozen BC bundle. The default manifest is
-`team_00000P_manifest.json`; the older `pilot_split_manifest.json` must now be
-selected explicitly for the seven-method GRF experiment.
+`team_00000P_manifest.json`; it is now also the default full-data source for
+the seven-method GRF experiment.
 
 For the broader CI/registry/Apptainer strategy and the decision about which
 infrastructure to adopt or defer, see
@@ -82,12 +82,12 @@ disk. An NVIDIA GPU with at least 16 GB VRAM speeds the neural-network updates,
 but Google Research Football simulation remains CPU-bound. The launcher detects
 CUDA and otherwise uses CPU.
 
-The VM run uses one 3,000-frame clip from each of the ten matches. This yields
-17,994 joint / 395,868 player transitions for training, 5,998 / 131,956 for
-validation, and 5,998 / 131,956 for test. Matches remain disjoint. It trains all
-seven methods with seeds 0, 1 and 2, 50 offline epochs, and 250,000 PPO/GAIL
-agent steps or CQL updates. Test rollouts run for 500 joint simulator steps.
-This is the next experimental run, rather than the final full-match sweep.
+The default VM run uses all chunks from five games containing focal team
+`DFL-CLU-00000P`: three training matches (422,774 joint transitions), one
+validation match (89,334), and one test match (146,386). Matches remain
+disjoint. It trains all seven methods with seeds 0, 1 and 2, 50 offline epochs,
+and 250,000 PPO/GAIL agent steps or CQL updates. Test rollouts run for 500 joint
+simulator steps.
 
 From the local Mac, create an SSH alias so `rsync` can cross the university login host. Add this to
 `~/.ssh/config` (hostnames and username only; never put a password in this file):
@@ -103,18 +103,19 @@ Host pc12041
   ProxyJump uni-math-login
 ```
 
-With the university VPN connected, verify it with `ssh pc12041`. The commands
-below are specifically for the older seven-method closed-loop GRF pilot:
+With the university VPN connected, verify it with `ssh pc12041`. For a quick
+seven-method closed-loop GRF smoke/trial, transfer the smaller manifest for the
+same selected team and same five match assignments:
 
 ```bash
 SYNC_PROCESSED_DATASET=final_stage_v1 \
-SYNC_SPLIT_MANIFEST=pilot_split_manifest.json \
+SYNC_SPLIT_MANIFEST=team_00000P_pilot_manifest.json \
 SYNC_METHOD=legacy \
 bash vm/sync_to_vm.sh pc12041 thesis_MARL_in_football
 ```
 
-The sync reads the selected manifest and sends only its referenced files (about 264 MiB for the
-current pilot), not every file in the 3.5 GiB `final_stage_v1` directory. `SYNC_RAW_DATA=1` still
+The sync reads the selected manifest and sends only its referenced files (about 121 MiB for this
+pilot), not every file in the 3.5 GiB `final_stage_v1` directory. `SYNC_RAW_DATA=1` still
 controls whether raw datasets are included.
 
 On the VM:
@@ -137,7 +138,7 @@ ones. A method interrupted midway restarts that method; completed checkpoints
 are preserved. Inspect live output with:
 
 ```bash
-tail -f artifacts/vm_runs/vm_training_20260924/console.log
+tail -f artifacts/vm_runs/team_00000P_closed_loop_full/console.log
 ```
 
 Override budgets through environment variables, for example:
@@ -153,8 +154,9 @@ Fetch results from the local Mac:
 bash vm/fetch_results.sh USER@HOST /absolute/path/thesis_MARL_in_football
 ```
 
-The default sync sends the validated pilot manifest and its selected files and omits the raw
-datasets. Set `SYNC_RAW_DATA=1` only if the remote machine must rebuild data. The source tree
+The default sync sends the complete selected-team manifest and its referenced files and omits the
+raw datasets. Set `SYNC_SPLIT_MANIFEST=team_00000P_pilot_manifest.json` for the smaller smoke/trial
+transfer. Set `SYNC_RAW_DATA=1` only if the remote machine must rebuild data. The source tree
 includes vendored GRF. Sync scripts never delete remote files. Keep at least 50 GB free for a pilot
 and preferably 100 GB for environments, processed data, logs, checkpoints, and repeated runs.
 

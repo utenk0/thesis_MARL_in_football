@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_DIR="${PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-RUN_NAME="${1:-${RUN_NAME:-vm_training_20260924}}"
+RUN_NAME="${1:-${RUN_NAME:-team_00000P_closed_loop_full}}"
 STATE_DIR="$PROJECT_DIR/artifacts/vm_runs/$RUN_NAME"
 
 if [[ -f "$STATE_DIR/training.pid" ]]; then

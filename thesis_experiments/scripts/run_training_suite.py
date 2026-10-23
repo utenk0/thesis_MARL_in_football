@@ -25,6 +25,46 @@ class TrainingRun:
     returncode: int | None = None
 
 
+def _dataset_contract(manifest_path: Path, manifest: dict) -> dict[str, object]:
+    """Create immutable provenance shared by every method in this suite run."""
+    return {
+        "version": "closed_loop_dataset_contract_v1",
+        "split_manifest": str(manifest_path),
+        "split_manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        "team_id": manifest.get("team_id"),
+        "splits": {
+            split: {
+                "matches": sorted({str(row.get("match_id")) for row in rows}),
+                "paths": [str(row["path"]) for row in rows],
+            }
+            for split, rows in manifest["splits"].items()
+        },
+    }
+
+
+def _check_team_binding(
+    parser: argparse.ArgumentParser,
+    manifest_path: Path,
+    manifest: dict,
+    expected_team_id: str | None,
+) -> None:
+    if expected_team_id is None:
+        return
+    declared_team_id = manifest.get("team_id")
+    if declared_team_id != expected_team_id:
+        parser.error(
+            f"{manifest_path} declares team_id {declared_team_id!r}; "
+            f"expected {expected_team_id!r}"
+        )
+    for split, rows in manifest["splits"].items():
+        for row in rows:
+            if row.get("focal_team_id") != expected_team_id:
+                parser.error(
+                    f"{manifest_path} contains a {split} record for focal_team_id "
+                    f"{row.get('focal_team_id')!r}; expected {expected_team_id!r}"
+                )
+
+
 def _method_command(args: argparse.Namespace, *, seed: int, method: str, output_dir: Path) -> list[str]:
     command = [
         args.python,
@@ -100,6 +140,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", nargs="+", type=Path)
     parser.add_argument("--split-manifest", type=Path)
+    parser.add_argument(
+        "--expected-team-id",
+        help="Require every split-manifest record to belong to this focal team.",
+    )
     parser.add_argument("--validation-data", nargs="+", type=Path)
     parser.add_argument("--test-data", nargs="+", type=Path)
     parser.add_argument("--external-test-data", nargs="+", type=Path)
@@ -130,10 +174,18 @@ def main() -> None:
         help="Keep completed seed/method runs and retry incomplete entries in an existing output directory.",
     )
     args = parser.parse_args()
+    contract: dict[str, object] | None = None
     if args.split_manifest:
         if args.data or args.validation_data or args.test_data or args.external_test_data:
             parser.error("Use --split-manifest or explicit data paths, not both")
-        splits = json.loads(args.split_manifest.read_text())["splits"]
+        manifest_document = json.loads(args.split_manifest.read_text())
+        splits = manifest_document.get("splits")
+        if not isinstance(splits, dict):
+            parser.error(f"{args.split_manifest} does not contain a splits object")
+        _check_team_binding(
+            parser, args.split_manifest, manifest_document, args.expected_team_id
+        )
+        contract = _dataset_contract(args.split_manifest, manifest_document)
         for split, rows in splits.items():
             for row in rows:
                 path = Path(row["path"])
@@ -170,6 +222,25 @@ def main() -> None:
     log_dir = args.output_dir / "logs"
     args.output_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = args.output_dir / "training_manifest.json"
+    if contract is not None:
+        contract_path = args.output_dir / "dataset_contract.json"
+        if contract_path.exists():
+            try:
+                existing_contract = json.loads(contract_path.read_text())
+            except (OSError, ValueError) as exc:
+                parser.error(f"Cannot read dataset contract {contract_path}: {exc}")
+            if existing_contract != contract:
+                parser.error(
+                    f"{args.output_dir} is already bound to a different dataset contract; "
+                    "choose a new --output-dir"
+                )
+        elif manifest_path.exists():
+            parser.error(
+                f"{args.output_dir} contains a legacy training manifest without a "
+                "dataset contract; choose a new --output-dir"
+            )
+        else:
+            contract_path.write_text(json.dumps(contract, indent=2) + "\n")
     if manifest_path.exists():
         if not args.resume:
             parser.error(f"{manifest_path} already exists; choose a new --output-dir or pass --resume")

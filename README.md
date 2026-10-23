@@ -69,7 +69,9 @@ The repository intentionally retains two distinct experiments:
    `ppo`, `cql`, `dt`, `ghosting`, `ctde`) load through the action-policy
    registry and control all 22 players in live GRF through `FootballGRFEnv`.
    This track uses Gymnasium, `imitation`, Stable-Baselines3, d3rlpy, and the
-   vendored GRF worker in the full image.
+   vendored GRF worker in the full image. Its Docker and VM launchers are bound
+   to the match-disjoint games of focal team `DFL-CLU-00000P`: three matches
+   for training, one for validation, and one for testing.
 
 The tracks answer different questions and must be reported separately. A
 trajectory-forecasting result is not evidence of simulator control; a GRF
@@ -310,8 +312,9 @@ and use each policy for autonomous 22-player GRF rollouts:
 
 ```bash
 .venv-methods/bin/python -m thesis_experiments.scripts.run_training_suite \
-  --split-manifest data/processed/training_stage/split_manifest.json \
-  --output-dir artifacts/training_stage_20260916 \
+  --split-manifest data/processed/final_stage_v1/team_00000P_manifest.json \
+  --expected-team-id DFL-CLU-00000P \
+  --output-dir artifacts/team_00000P_closed_loop \
   --methods all --seeds 0 --epochs 10 --actor-epochs 10 \
   --batch-size 256 --hidden-size 128 --total-timesteps 11264 \
   --rollout-steps 128 --episode-steps 128 --context-length 16 \
@@ -324,8 +327,10 @@ Use repeated `--seeds` and larger budgets for subsequent experiments.
 
 Results live in `seed_0/methods/<method>/`: checkpoint, config, training result,
 validation/test evaluation JSON, and autonomous rollout NPZ files. The suite
-updates `training_manifest.json` after every run and exits nonzero on a failed
-training or evaluation; placeholders cannot count as completed training.
+records the immutable common split in `dataset_contract.json`, updates
+`training_manifest.json` after every run, and exits nonzero on a failed
+training or evaluation. A resumed run cannot reuse checkpoints from a different
+manifest, and placeholders cannot count as completed training.
 
 `FootballGRFEnv` runs from `.venv-methods` and starts the GRF worker using
 `.venv-grf/bin/python`; override with `--grf-python` if needed. Both environments
@@ -340,9 +345,9 @@ training-derived desired returns and maintains per-player history.
 
 The next multi-seed run can be installed, started in the background, resumed,
 monitored, and fetched with the scripts under [`vm/`](vm/README.md). The default
-VM job expands each match clip to 3,000 frames, uses seeds 0–2, and trains all
-seven methods. A recommended starting VM has Ubuntu 22.04 x86_64, 16 vCPUs,
-32 GB RAM, 100 GB disk, and optionally an NVIDIA GPU with at least 16 GB VRAM.
+VM job uses the complete `DFL-CLU-00000P` manifest, seeds 0–2, and all seven
+methods. A recommended starting VM has Ubuntu 22.04 x86_64, 16 vCPUs, 32 GB
+RAM, 100 GB disk, and optionally an NVIDIA GPU with at least 16 GB VRAM.
 
 The same Linux stack can be built and smoke-tested locally with Docker. See
 [`docker/README.md`](docker/README.md). On Apple Silicon it runs as

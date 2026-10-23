@@ -145,9 +145,14 @@ host data/processed          -> /workspace/data/processed       (read-only)
 host artifacts/container_runs -> /workspace/artifacts/vm_runs   (read-write)
 ```
 
-They can be changed with `THESIS_DATA_ROOT` and `THESIS_OUTPUT_ROOT`. The default is the current
-61-feature pilot selected by `final_stage_v1/pilot_split_manifest.json`. Change its directory with
-`TRAINING_DATASET` and its manifest filename with `TRAINING_MANIFEST`.
+They can be changed with `THESIS_DATA_ROOT` and `THESIS_OUTPUT_ROOT`. Every
+closed-loop profile is bound to focal team `DFL-CLU-00000P`. Smoke and trial
+use `final_stage_v1/team_00000P_pilot_manifest.json` (10 chunks, about 121 MiB),
+while full uses `final_stage_v1/team_00000P_manifest.json` (169 chunks, about
+2.2 GiB). Both use the same three train matches, one validation match, and one
+test match. Override them with `TRAINING_SMOKE_MANIFEST`,
+`TRAINING_TRIAL_MANIFEST`, and `TRAINING_MANIFEST`; `TRAINING_TEAM_ID` is
+validated before training begins.
 
 On an Apple Silicon Mac the image deliberately uses `linux/amd64`, matching the
 recommended VM. Docker Desktop runs it through architecture emulation, so the
@@ -199,7 +204,7 @@ docker compose -f docker/compose.yaml ps
 Results appear at:
 
 ```text
-artifacts/container_runs/container_smoke/
+artifacts/container_runs/team_00000P_container_smoke/
 ```
 
 Success means `training_manifest.json` contains seven `completed` entries and
@@ -213,7 +218,8 @@ docker compose -f docker/compose.yaml --profile trial logs -f trial
 ```
 
 This uses seed 0, five epochs, 20,000 online/CQL steps, and 100-step test
-rollouts. Results appear in `artifacts/container_runs/container_trial/`.
+rollouts. Results appear in
+`artifacts/container_runs/team_00000P_container_trial/`.
 
 ## 4. Full profile
 
@@ -264,17 +270,19 @@ also transfers the three hash-frozen BC initializations. The separate
 `sync_trajectory_bc_to_vm.sh` command remains available for a BC-only
 portability bundle.
 
-For the closed-loop seven-method GRF pilot instead, select the legacy manifest
-explicitly:
+For the closed-loop seven-method GRF smoke/trial, transfer the selected team's
+smaller manifest:
 
 ```bash
 SYNC_PROCESSED_DATASET=final_stage_v1 \
-SYNC_SPLIT_MANIFEST=pilot_split_manifest.json \
+SYNC_SPLIT_MANIFEST=team_00000P_pilot_manifest.json \
 SYNC_METHOD=legacy \
 bash vm/sync_to_vm.sh pc12041 thesis_MARL_in_football
 ```
 
-That legacy pilot transfers 20 NPZ files (about 264 MiB).
+That pilot transfers 10 NPZ files (about 121 MiB). For the full closed-loop
+profile, the already shown `team_00000P_manifest.json` transfer supplies all
+169 selected-team chunks.
 
 On PC12041, validate the resolved configuration before starting anything:
 
@@ -337,10 +345,10 @@ If Docker cannot provide the GPU, omit `docker/compose.gpu.yaml`; the experiment
 functional on CPU. If CUDA is requested but unavailable to PyTorch, the launcher exits before
 training instead of silently falling back to CPU.
 
-For a larger **legacy closed-loop** experiment, keep
-`TRAINING_DATASET=final_stage_v1` and change
-`TRAINING_MANIFEST=split_manifest.json`. Then sync that manifest intentionally.
-It references about 3.5 GiB of processed data. This setting does not affect the
-trajectory services, which use `team_00000P_manifest.json` and their frozen
-match-disjoint contract. Always use new run names so pilot checkpoints cannot
-be mistaken for final results.
+The **full closed-loop** profile defaults to `TRAINING_DATASET=final_stage_v1`
+and `TRAINING_MANIFEST=team_00000P_manifest.json`. It therefore uses the same
+focal-team data contract as the trajectory comparison, although its prediction
+target and evaluation are different. The trajectory services also use this
+manifest and their frozen match-disjoint contract. The launcher writes a
+`dataset_contract.json` and refuses to resume an output directory created from
+a different manifest.

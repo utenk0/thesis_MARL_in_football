@@ -3,7 +3,7 @@
 set -euo pipefail
 
 PROJECT_DIR="${PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-RUN_NAME="${RUN_NAME:-vm_training_20260924}"
+RUN_NAME="${RUN_NAME:-team_00000P_closed_loop_full}"
 STATE_DIR="$PROJECT_DIR/artifacts/vm_runs/$RUN_NAME"
 PID_FILE="$STATE_DIR/training.pid"
 CONSOLE_LOG="$STATE_DIR/console.log"
