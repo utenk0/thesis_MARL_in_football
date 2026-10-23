@@ -1,0 +1,18 @@
+services:
+  trajectory-bc-verify:
+    user: "${THESIS_UID:-1000}:${THESIS_GID:-1000}"
+
+  trajectory-cql-train:
+    user: "${THESIS_UID:-1000}:${THESIS_GID:-1000}"
+
+  trajectory-ctde-train:
+    user: "${THESIS_UID:-1000}:${THESIS_GID:-1000}"
+
+  smoke:
+    user: "${THESIS_UID:-1000}:${THESIS_GID:-1000}"
+
+  trial:
+    user: "${THESIS_UID:-1000}:${THESIS_GID:-1000}"
+
+  full:
+    user: "${THESIS_UID:-1000}:${THESIS_GID:-1000}"

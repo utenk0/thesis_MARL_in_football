@@ -1,0 +1,77 @@
+{
+  "contract": "single_team_autonomous_trajectory_v1",
+  "team_id": "DFL-CLU-00000P",
+  "split": {
+    "train_matches": [
+      "DFL-MAT-J03WOH",
+      "DFL-MAT-J03WOY",
+      "DFL-MAT-J03WPY"
+    ],
+    "validation_matches": [
+      "DFL-MAT-J03WQQ"
+    ],
+    "test_matches": [
+      "DFL-MAT-J03WR9"
+    ],
+    "match_disjoint": true
+  },
+  "information": {
+    "observation_variant": "temporal_context_no_slot",
+    "causal_history_steps": 10,
+    "future_observations_used": false,
+    "future_actions_used": false,
+    "future_velocities_used": false,
+    "test_used_for_selection": false
+  },
+  "forecast": {
+    "coordinate_unit": "meters",
+    "target": "focal_player_positions_relative_to_forecast_origin",
+    "horizons_steps": [
+      1,
+      5,
+      10,
+      25,
+      50,
+      100
+    ],
+    "controlled_players": 11
+  },
+  "repetitions": {
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "report": "mean_and_sample_standard_deviation"
+  },
+  "selection": {
+    "split": "validation",
+    "primary_metric": "autonomous_ade_meters",
+    "test_role": "one_frozen_final_report"
+  },
+  "metrics": {
+    "primary": [
+      "autonomous_ade_meters",
+      "autonomous_fde_meters"
+    ],
+    "per_horizon": [
+      "mean_position_error_meters",
+      "centroid_error_meters",
+      "team_width_mae_meters",
+      "team_depth_mae_meters"
+    ]
+  },
+  "baselines": [
+    "stationary",
+    "constant_velocity_from_forecast_origin",
+    "constant_acceleration_from_forecast_origin"
+  ],
+  "validation_gate": {
+    "reference": "constant_velocity_from_forecast_origin",
+    "mean_ade_must_strictly_improve": true,
+    "mean_fde_must_strictly_improve": true,
+    "minimum_improving_seeds": 2,
+    "maximum_regressing_seeds": 0
+  },
+  "scope": "Offline autonomous horizon forecasting. Passing this contract does not by itself establish closed-loop simulator control or complete-match reconstruction."
+}

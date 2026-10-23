@@ -1,0 +1,20 @@
+services:
+  trajectory-cql-train:
+    gpus: all
+    environment:
+      CQL_DEVICE: cuda
+
+  trajectory-ctde-train:
+    gpus: all
+    environment:
+      CTDE_DEVICE: cuda
+
+  trial:
+    gpus: all
+    environment:
+      DEVICE: cuda
+
+  full:
+    gpus: all
+    environment:
+      DEVICE: cuda

@@ -11,6 +11,7 @@ outputs/
 .pytest_cache/
 .idea/
 .DS_Store
+docker/server.env
 *.egg-info/
 *.py[cod]
 football/gfootball_engine
@@ -19,3 +20,6 @@ data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/final_stage_v1/
+data/processed/final_stage_v1/*
+!data/processed/final_stage_v1/*manifest.json

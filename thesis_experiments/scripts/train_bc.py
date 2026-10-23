@@ -21,7 +21,7 @@ def main() -> None:
     parser.add_argument("--device", default="cpu")
     parser.add_argument(
         "--observation-variant",
-        choices=["spatial", "temporal_context", "full"],
+        choices=["spatial", "temporal_context", "temporal_context_no_slot", "full"],
         default="full",
     )
     parser.add_argument(

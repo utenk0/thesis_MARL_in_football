@@ -37,6 +37,44 @@ class SharedActor(nn.Module):
         return torch.distributions.Categorical(logits=logits).sample()
 
 
+class SharedDisplacementPredictor(nn.Module):
+    """One causal next-displacement regressor shared by all team players."""
+
+    def __init__(self, observation_size: int = LOCAL_FEATURES, hidden_size: int = 128):
+        super().__init__()
+        self.observation_size = observation_size
+        self.hidden_size = hidden_size
+        self.network = _mlp(observation_size, 2, hidden_size)
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        """Predict the next ``(dx, dy)`` in metres for each observation."""
+
+        return self.network(observations)
+
+
+class TemporalResidualDisplacementPredictor(nn.Module):
+    """Predict a correction to causal previous-velocity persistence."""
+
+    def __init__(self, input_size: int, hidden_size: int = 128):
+        super().__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.network = _mlp(input_size, 2, hidden_size)
+        self.reset_correction_head()
+
+    def reset_correction_head(self) -> None:
+        """Make the initial model exactly reproduce the persistence baseline."""
+
+        output = self.network[-1]
+        nn.init.zeros_(output.weight)
+        nn.init.zeros_(output.bias)
+
+    def forward(self, observations_and_history: torch.Tensor) -> torch.Tensor:
+        """Return an additive ``(dx, dy)`` correction in metres."""
+
+        return self.network(observations_and_history)
+
+
 class CentralizedCritic(nn.Module):
     """Estimate left- and right-team values from the complete 22-player state."""
 

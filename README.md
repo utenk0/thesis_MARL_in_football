@@ -57,6 +57,24 @@ Environment split:
 The split is required because `d3rlpy` depends on `gym>=0.26`, while GRF
 expects `gym<=0.21`.
 
+## Two experiment tracks
+
+The repository intentionally retains two distinct experiments:
+
+1. **Offline trajectory comparison (current BC/CQL/CTDE result).** Project-owned
+   PyTorch methods predict six future player positions under the frozen
+   `single_team_autonomous_trajectory_v1` contract. This track uses the
+   lightweight trajectory image and does not use Gymnasium or GRF at runtime.
+2. **Closed-loop GRF action control.** Seven 19-action methods (`bc`, `gail`,
+   `ppo`, `cql`, `dt`, `ghosting`, `ctde`) load through the action-policy
+   registry and control all 22 players in live GRF through `FootballGRFEnv`.
+   This track uses Gymnasium, `imitation`, Stable-Baselines3, d3rlpy, and the
+   vendored GRF worker in the full image.
+
+The tracks answer different questions and must be reported separately. A
+trajectory-forecasting result is not evidence of simulator control; a GRF
+control result is not a held-out real-world trajectory forecast.
+
 ## Project-owned code
 
 ```text
@@ -180,7 +198,7 @@ GRF:       centred, x in [-1,1], y in about [-0.42,0.42]
 
 ```bash
 .venv-grf/bin/python -m thesis_experiments.scripts.audit_dataset_a_grf_100 \
-  --input /Users/liza/PycharmProjects/PythonProject/outputs/frames_jsonl/dataset_a_frames_DFL-MAT-J03WN1.jsonl \
+  --input /path/to/dataset_a_frames_DFL-MAT-J03WN1.jsonl \
   --output-dir artifacts/dataset_a_grf_live \
   --start-frame 10000 --frames 100 \
   --simulate --live --fps 10
@@ -253,6 +271,17 @@ CTDE     uses project PyTorch code
 
 `dt` trains and saves a causal Transformer. All seven methods can reload their
 checkpoints and control all 22 players in GRF through `evaluate_policy`.
+
+These seven entries are the legacy 19-action framework. The accepted
+trajectory comparison has a separate registry containing `bc`, `cql`, and
+`ctde`.
+Trajectory CQL selects train-only six-horizon motion-plan prototypes with a
+project-owned PyTorch conservative Q-learning loss; see
+[`TRAJECTORY_CQL_EXPERIMENT.md`](thesis_plan/TRAJECTORY_CQL_EXPERIMENT.md).
+Trajectory CTDE keeps the BC-compatible local actor while a training-only
+centralized team-value critic weights its continuous trajectory-regression
+updates; see
+[`TRAJECTORY_CTDE_EXPERIMENT.md`](thesis_plan/TRAJECTORY_CTDE_EXPERIMENT.md).
 
 The earlier Stage 9 smoke results for the two 100-frame transition files are summarized in
 [`thesis_plan/METHOD_SMOKE_RESULTS.md`](thesis_plan/METHOD_SMOKE_RESULTS.md).

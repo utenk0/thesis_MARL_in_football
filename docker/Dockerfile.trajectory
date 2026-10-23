@@ -1,0 +1,37 @@
+ARG TRAJECTORY_BASE_IMAGE=python:3.12-slim-bookworm
+FROM ${TRAJECTORY_BASE_IMAGE}
+
+ARG TRAJECTORY_PYTHON=python
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PROJECT_DIR=/workspace \
+    HOME=/tmp/thesis-home \
+    OMP_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1
+
+WORKDIR /workspace
+
+COPY requirements-trajectory.txt ./
+RUN ${TRAJECTORY_PYTHON} -m pip install --retries 10 --timeout 60 \
+         -r requirements-trajectory.txt \
+    && resolved_python="$(${TRAJECTORY_PYTHON} -c 'import sys; print(sys.executable)')" \
+    && printf '#!/bin/sh\nexec "%s" "$@"\n' "$resolved_python" \
+         > /usr/local/bin/trajectory-python \
+    && chmod +x /usr/local/bin/trajectory-python \
+    && mkdir -p /tmp/thesis-home \
+    && chmod 1777 /tmp/thesis-home
+
+COPY thesis_experiments ./thesis_experiments
+COPY thesis_plan ./thesis_plan
+COPY vm ./vm
+
+RUN mkdir -p \
+      /workspace/data/processed \
+      /workspace/artifacts/single_team_bc_completed \
+      /workspace/artifacts/single_team_multi_horizon_bc_full \
+      /workspace/artifacts/vm_runs \
+    && /usr/local/bin/trajectory-python -m compileall -q thesis_experiments
+
+CMD ["bash", "vm/run_trajectory_bc_portability.sh"]

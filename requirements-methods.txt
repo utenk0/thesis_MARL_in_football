@@ -1,0 +1,9 @@
+# Optional learning backends for thesis_experiments.scripts.run_method.
+# Keep separate from requirements-project.txt so the GRF/data pipeline remains minimal.
+# Note: d3rlpy installs gym>=0.26, while vendored Google Research Football
+# expects gym<=0.21. Install this file only in .venv-methods, not .venv-grf.
+gymnasium==0.29.1
+torch==2.14.0
+stable-baselines3==2.2.1
+imitation==1.0.1
+d3rlpy==2.6.1

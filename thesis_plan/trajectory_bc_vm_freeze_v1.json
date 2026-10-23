@@ -1,0 +1,176 @@
+{
+  "version": "trajectory_bc_vm_freeze_v1",
+  "status": "frozen",
+  "contract": "single_team_autonomous_trajectory_v1",
+  "team_id": "DFL-CLU-00000P",
+  "horizons": [
+    1,
+    5,
+    10,
+    25,
+    50,
+    100
+  ],
+  "history_steps": 10,
+  "observation_variant": "temporal_context_no_slot",
+  "portability": {
+    "device": "cpu",
+    "absolute_tolerance_meters": 0.00001,
+    "reference_split": "validation",
+    "reference_match": "DFL-MAT-J03WQQ",
+    "reference_data": "data/processed/final_stage_v1/train/dataset_a_DFL-MAT-J03WQQ_chunk_0000.npz"
+  },
+  "contract_file": "thesis_plan/trajectory_evaluation_contract_v1.json",
+  "test_summary": "artifacts/single_team_multi_horizon_bc_full/test_summary.json",
+  "files": [
+    {
+      "role": "final_bc_manifest",
+      "path": "artifacts/single_team_bc_completed/final_manifest.json",
+      "sha256": "74d5275bb961149563e229b1267190e5a53e505460f82367c0afec78fbb4fe65",
+      "bytes": 4409
+    },
+    {
+      "role": "final_bc_report",
+      "path": "artifacts/single_team_bc_completed/FINAL_BC_REPORT.md",
+      "sha256": "3962dba7d99fa47e2fd50cd91614166cbca46863458043a6fa06d8a446b77e97",
+      "bytes": 889
+    },
+    {
+      "role": "pretest_freeze",
+      "path": "artifacts/single_team_multi_horizon_bc_full/pretest_freeze.json",
+      "sha256": "ba0e787b8c22ad7dac96dc32d6c9d9107390c534b2d52736040c3c7a3be0f3eb",
+      "bytes": 4893
+    },
+    {
+      "role": "frozen_test_summary",
+      "path": "artifacts/single_team_multi_horizon_bc_full/test_summary.json",
+      "sha256": "5f7356d1b5a52e96de41e6b9f1db149ef7c24b7ebef3f1302ad0be80754704cc",
+      "bytes": 22282
+    },
+    {
+      "role": "trajectory_contract",
+      "path": "thesis_plan/trajectory_evaluation_contract_v1.json",
+      "sha256": "ef1ae6ee8e97e4e71a973f1b25c3032c22ff3c9de7f211bb8f898eb4291922ff",
+      "bytes": 1911
+    },
+    {
+      "role": "team_manifest",
+      "path": "data/processed/final_stage_v1/team_00000P_manifest.json",
+      "sha256": "ebb566e53f3ebbcdde058e00f87f7ce1042f635daceaf6e98eb2194ff8813aa5",
+      "bytes": 200839
+    },
+    {
+      "role": "portability_validation_chunk",
+      "path": "data/processed/final_stage_v1/train/dataset_a_DFL-MAT-J03WQQ_chunk_0000.npz",
+      "sha256": "9061949003325be4a7f6bba1700a855e5b444bd5e909330d3ecdb8fac4f68b69",
+      "bytes": 15023868
+    },
+    {
+      "role": "multi_horizon_implementation",
+      "path": "thesis_experiments/training/team_multi_horizon_bc.py",
+      "sha256": "abe900db10a59fde128e8b15932ccac2f6bc564fd6ecd52b335a44f14ae1c907",
+      "bytes": 22688
+    },
+    {
+      "role": "history_implementation",
+      "path": "thesis_experiments/training/team_residual_displacement_bc.py",
+      "sha256": "a77bf6bd56b563ee8300283d4276ca28f9f9c161888e56286da6086f57c51d73",
+      "bytes": 18621
+    },
+    {
+      "role": "training_entrypoint",
+      "path": "thesis_experiments/scripts/train_team_multi_horizon_bc.py",
+      "sha256": "417bc7931c067c3e3ca718439f103ef514bf74319066529d809916abb1ecf8ae",
+      "bytes": 6055
+    },
+    {
+      "role": "seed_0_checkpoint",
+      "path": "artifacts/single_team_multi_horizon_bc_full/seed_0/single_team_multi_horizon_bc.pt",
+      "sha256": "10382d3d998d1da22213d1bbb1d91ba60f9abe97d98fa36c381fff71fe950f1f",
+      "bytes": 129442
+    },
+    {
+      "role": "seed_0_config",
+      "path": "artifacts/single_team_multi_horizon_bc_full/seed_0/config.json",
+      "sha256": "1827e8fa6a7b3a3796e21d1f78cdba57a7399fcc6e3197a73887a5111f0984dc",
+      "bytes": 885
+    },
+    {
+      "role": "seed_1_checkpoint",
+      "path": "artifacts/single_team_multi_horizon_bc_full/seed_1/single_team_multi_horizon_bc.pt",
+      "sha256": "4b466e611fc814e2b19466feef16891b82b3031babb7e72269a33d5d450100dc",
+      "bytes": 129442
+    },
+    {
+      "role": "seed_1_config",
+      "path": "artifacts/single_team_multi_horizon_bc_full/seed_1/config.json",
+      "sha256": "c31ea2c2da2a3d9a221bc5b712bd4a320bab518063a026dc5f4b7e7bd80370f6",
+      "bytes": 885
+    },
+    {
+      "role": "seed_2_checkpoint",
+      "path": "artifacts/single_team_multi_horizon_bc_full/seed_2/single_team_multi_horizon_bc.pt",
+      "sha256": "a06fba844ed166942ffd4d25165813fc75f1ba84ed46628c8107e49f2cb4c7a2",
+      "bytes": 129442
+    },
+    {
+      "role": "seed_2_config",
+      "path": "artifacts/single_team_multi_horizon_bc_full/seed_2/config.json",
+      "sha256": "8a563b2dc085be9900b27839eb66ef260d6afdbfb96a1bd385a7022067449081",
+      "bytes": 885
+    }
+  ],
+  "models": [
+    {
+      "seed": 0,
+      "checkpoint": "artifacts/single_team_multi_horizon_bc_full/seed_0/single_team_multi_horizon_bc.pt",
+      "selected_epoch": 6,
+      "expected": {
+        "ade_meters": 1.29108425923408,
+        "fde_meters": 5.053816245222495,
+        "per_horizon_meters": [
+          0.012431982097509441,
+          0.05009950468934844,
+          0.12967434097805192,
+          0.6339889694381882,
+          1.866494512978888,
+          5.053816245222495
+        ]
+      }
+    },
+    {
+      "seed": 1,
+      "checkpoint": "artifacts/single_team_multi_horizon_bc_full/seed_1/single_team_multi_horizon_bc.pt",
+      "selected_epoch": 9,
+      "expected": {
+        "ade_meters": 1.3019525963785608,
+        "fde_meters": 5.180903204340704,
+        "per_horizon_meters": [
+          0.012301981769144855,
+          0.0454759763536619,
+          0.12038214528448904,
+          0.5815837588298526,
+          1.8710685116935117,
+          5.180903204340704
+        ]
+      }
+    },
+    {
+      "seed": 2,
+      "checkpoint": "artifacts/single_team_multi_horizon_bc_full/seed_2/single_team_multi_horizon_bc.pt",
+      "selected_epoch": 10,
+      "expected": {
+        "ade_meters": 1.302981857636297,
+        "fde_meters": 5.169744673650924,
+        "per_horizon_meters": [
+          0.01230050435067525,
+          0.04480074334810663,
+          0.12069627999803781,
+          0.5926349378497816,
+          1.8777140066202567,
+          5.169744673650924
+        ]
+      }
+    }
+  ]
+}

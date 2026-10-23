@@ -1,0 +1,189 @@
+name: thesis-marl-football
+
+x-training: &training
+  image: ${THESIS_IMAGE:-thesis-marl-football:local}
+  platform: linux/amd64
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile
+  init: true
+  shm_size: 2gb
+  volumes:
+    - type: bind
+      source: ${THESIS_DATA_ROOT:-../data/processed}
+      target: /workspace/data/processed
+      read_only: true
+    - type: bind
+      source: ${THESIS_OUTPUT_ROOT:-../artifacts/container_runs}
+      target: /workspace/artifacts/vm_runs
+
+x-training-environment: &training-environment
+  DATA_DIR: data/processed/${TRAINING_DATASET:-final_stage_v1}
+  SPLIT_MANIFEST: ${TRAINING_MANIFEST:-pilot_split_manifest.json}
+  DEVICE: ${TRAINING_DEVICE:-cpu}
+  HOME: /tmp/thesis-home
+  MPLCONFIGDIR: /tmp/thesis-runtime/matplotlib
+  XDG_CACHE_HOME: /tmp/thesis-cache
+  TORCH_HOME: /tmp/thesis-cache/torch
+  MIN_FREE_GB: ${MIN_OUTPUT_FREE_GB:-5}
+
+services:
+  trajectory-bc-verify:
+    image: ${THESIS_TRAJECTORY_IMAGE:-thesis-marl-football-trajectory:local}
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.trajectory
+      args:
+        TRAJECTORY_BASE_IMAGE: ${THESIS_TRAJECTORY_BASE_IMAGE:-python:3.12-slim-bookworm}
+        TRAJECTORY_PYTHON: ${THESIS_TRAJECTORY_PYTHON:-python}
+    profiles: [trajectory]
+    init: true
+    working_dir: /workspace
+    environment:
+      PROJECT_DIR: /workspace
+      METHODS_PYTHON: /usr/local/bin/trajectory-python
+      RUN_NAME: trajectory_bc_docker_portability_v1
+      TORCH_THREADS: "1"
+      HOME: /tmp/thesis-home
+    volumes:
+      - type: bind
+        source: ${THESIS_DATA_ROOT:-../data/processed}
+        target: /workspace/data/processed
+        read_only: true
+      - type: bind
+        source: ${THESIS_FROZEN_ARTIFACT_ROOT:-../artifacts}/single_team_bc_completed
+        target: /workspace/artifacts/single_team_bc_completed
+        read_only: true
+      - type: bind
+        source: ${THESIS_FROZEN_ARTIFACT_ROOT:-../artifacts}/single_team_multi_horizon_bc_full
+        target: /workspace/artifacts/single_team_multi_horizon_bc_full
+        read_only: true
+      - type: bind
+        source: ${THESIS_OUTPUT_ROOT:-../artifacts/container_runs}
+        target: /workspace/artifacts/vm_runs
+    command: ["bash", "vm/run_trajectory_bc_portability.sh"]
+
+  trajectory-cql-train:
+    image: ${THESIS_TRAJECTORY_IMAGE:-thesis-marl-football-trajectory:local}
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.trajectory
+      args:
+        TRAJECTORY_BASE_IMAGE: ${THESIS_TRAJECTORY_BASE_IMAGE:-python:3.12-slim-bookworm}
+        TRAJECTORY_PYTHON: ${THESIS_TRAJECTORY_PYTHON:-python}
+    profiles: [trajectory-cql]
+    init: true
+    working_dir: /workspace
+    environment:
+      PROJECT_DIR: /workspace
+      METHODS_PYTHON: /usr/local/bin/trajectory-python
+      CQL_OUTPUT_ROOT: /workspace/artifacts/vm_runs
+      CQL_RUN_NAME: ${CQL_RUN_NAME:-trajectory_cql_pretest_v1}
+      CQL_SEEDS: ${CQL_SEEDS:-0}
+      CQL_DEVICE: ${TRAINING_DEVICE:-cpu}
+      CQL_TORCH_THREADS: ${CQL_TORCH_THREADS:-4}
+      CQL_EPOCHS: ${CQL_EPOCHS:-10}
+      CQL_BATCH_SIZE: ${CQL_BATCH_SIZE:-2048}
+      CQL_LEARNING_RATE: ${CQL_LEARNING_RATE:-3e-4}
+      CQL_HIDDEN_SIZE: ${CQL_HIDDEN_SIZE:-128}
+      CQL_EARLY_STOPPING_PATIENCE: ${CQL_EARLY_STOPPING_PATIENCE:-3}
+      CQL_MINIMUM_EPOCHS: ${CQL_MINIMUM_EPOCHS:-5}
+      CQL_ACTION_COUNT: ${CQL_ACTION_COUNT:-32}
+      CQL_ALPHA: ${CQL_ALPHA:-1.0}
+      CQL_GAMMA: ${CQL_GAMMA:-0.99}
+      CQL_TARGET_UPDATE_INTERVAL: ${CQL_TARGET_UPDATE_INTERVAL:-500}
+      CQL_PROTOTYPE_SAMPLES: ${CQL_PROTOTYPE_SAMPLES:-100000}
+      CQL_KMEANS_ITERATIONS: ${CQL_KMEANS_ITERATIONS:-15}
+      HOME: /tmp/thesis-home
+    volumes:
+      - type: bind
+        source: ${THESIS_DATA_ROOT:-../data/processed}
+        target: /workspace/data/processed
+        read_only: true
+      - type: bind
+        source: ${THESIS_OUTPUT_ROOT:-../artifacts/container_runs}
+        target: /workspace/artifacts/vm_runs
+    command: ["bash", "vm/run_trajectory_cql.sh"]
+
+  trajectory-ctde-train:
+    image: ${THESIS_TRAJECTORY_IMAGE:-thesis-marl-football-trajectory:local}
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.trajectory
+      args:
+        TRAJECTORY_BASE_IMAGE: ${THESIS_TRAJECTORY_BASE_IMAGE:-python:3.12-slim-bookworm}
+        TRAJECTORY_PYTHON: ${THESIS_TRAJECTORY_PYTHON:-python}
+    profiles: [trajectory-ctde]
+    init: true
+    working_dir: /workspace
+    environment:
+      PROJECT_DIR: /workspace
+      METHODS_PYTHON: /usr/local/bin/trajectory-python
+      CTDE_BC_ROOT: /workspace/artifacts/single_team_multi_horizon_bc_full
+      CTDE_OUTPUT_ROOT: /workspace/artifacts/vm_runs
+      CTDE_RUN_NAME: ${CTDE_RUN_NAME:-trajectory_ctde_pretest_v1}
+      CTDE_SEEDS: ${CTDE_SEEDS:-0}
+      CTDE_DEVICE: ${TRAINING_DEVICE:-cpu}
+      CTDE_TORCH_THREADS: ${CTDE_TORCH_THREADS:-4}
+      CTDE_ACTOR_EPOCHS: ${CTDE_ACTOR_EPOCHS:-10}
+      CTDE_CRITIC_EPOCHS: ${CTDE_CRITIC_EPOCHS:-20}
+      CTDE_BATCH_SIZE: ${CTDE_BATCH_SIZE:-2048}
+      CTDE_LEARNING_RATE: ${CTDE_LEARNING_RATE:-3e-4}
+      CTDE_ACTOR_HIDDEN_SIZE: ${CTDE_ACTOR_HIDDEN_SIZE:-128}
+      CTDE_CRITIC_HIDDEN_SIZE: ${CTDE_CRITIC_HIDDEN_SIZE:-256}
+      CTDE_EARLY_STOPPING_PATIENCE: ${CTDE_EARLY_STOPPING_PATIENCE:-3}
+      CTDE_MINIMUM_EPOCHS: ${CTDE_MINIMUM_EPOCHS:-5}
+      CTDE_GAMMA: ${CTDE_GAMMA:-0.99}
+      CTDE_TEMPERATURE: ${CTDE_TEMPERATURE:-1.0}
+      CTDE_MAX_WEIGHT: ${CTDE_MAX_WEIGHT:-20.0}
+      CTDE_BC_COEFFICIENT: ${CTDE_BC_COEFFICIENT:-0.5}
+      HOME: /tmp/thesis-home
+    volumes:
+      - type: bind
+        source: ${THESIS_DATA_ROOT:-../data/processed}
+        target: /workspace/data/processed
+        read_only: true
+      - type: bind
+        source: ${THESIS_FROZEN_ARTIFACT_ROOT:-../artifacts}/single_team_multi_horizon_bc_full
+        target: /workspace/artifacts/single_team_multi_horizon_bc_full
+        read_only: true
+      - type: bind
+        source: ${THESIS_OUTPUT_ROOT:-../artifacts/container_runs}
+        target: /workspace/artifacts/vm_runs
+    command: ["bash", "vm/run_trajectory_ctde.sh"]
+
+  smoke:
+    <<: *training
+    environment:
+      <<: *training-environment
+      RUN_NAME: container_smoke
+      SEEDS: "0"
+      EPOCHS: "1"
+      TOTAL_TIMESTEPS: "704"
+      BATCH_SIZE: "64"
+      HIDDEN_SIZE: "64"
+      ROLLOUT_STEPS: "32"
+      EPISODE_STEPS: "64"
+      CONTEXT_LENGTH: "8"
+      EVAL_GRF_STEPS: "25"
+
+  trial:
+    <<: *training
+    profiles: [trial]
+    environment:
+      <<: *training-environment
+      RUN_NAME: container_trial
+      SEEDS: "0"
+      EPOCHS: "5"
+      TOTAL_TIMESTEPS: "20000"
+      EVAL_GRF_STEPS: "100"
+
+  full:
+    <<: *training
+    profiles: [full]
+    environment:
+      <<: *training-environment
+      RUN_NAME: container_full
